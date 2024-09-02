@@ -1,4 +1,4 @@
-# Vision Transformer (ViT) Implementation in Tinygrad
+# A Simple Vision Transformer (ViT) Implementation in Tinygrad
 
 This repository contains a minimalist implementation of the Vision Transformer (ViT) model using tinygrad.
 
