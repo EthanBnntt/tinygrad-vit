@@ -21,9 +21,13 @@ model = ViTModel(
     dropout_p=0.15,
     bias=True,
     num_layers=2,
+    mlp_gating=True,
 )
 
-BATCH_SIZE = 256
+# Print the number of parameters in the model
+print(f"Number of parameters: {sum(p.numel() for p in nn.state.get_parameters(model))}")
+
+BATCH_SIZE = 128
 NUM_BATCHES = 1000
 LR = 0.0001
 

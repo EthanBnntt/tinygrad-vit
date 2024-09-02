@@ -45,15 +45,20 @@ class MLP:
                  dim: int = 768,
                  hidden_dim: int = 3072,
                  dropout_p: float = 0.1,
-                 bias: bool = True):
+                 bias: bool = True,
+                 gating: bool = False):
 
         self.dropout_p = dropout_p
 
         self.in_proj = nn.Linear(dim, hidden_dim, bias=bias)
+        self.gating_proj = nn.Linear(dim, hidden_dim, bias=bias) if gating else None
         self.out_proj = nn.Linear(hidden_dim, dim, bias=bias)
 
     def __call__(self, x: Tensor):
-        return self.out_proj(self.in_proj(x).silu().dropout(self.dropout_p))
+        h = self.in_proj(x).silu().dropout(self.dropout_p)
+        if self.gating_proj is not None:
+            h = h * self.gating_proj(x).sigmoid()
+        return self.out_proj(h)
 
 class TransformerLayer:
     def __init__(self,
@@ -61,13 +66,14 @@ class TransformerLayer:
                  hidden_dim: int = 3072,
                  num_heads: int = 12,
                  dropout_p: float = 0.1,
-                 bias: bool = True):
+                 bias: bool = True,
+                 mlp_gating: bool = False):
 
         self.attn_norm = nn.RMSNorm(dim)
         self.feed_forward_norm = nn.RMSNorm(dim)
 
         self.multi_head_attention = MultiHeadAttention(dim, num_heads, dropout_p, bias)
-        self.feed_forward = MLP(dim, hidden_dim, dropout_p, bias)
+        self.feed_forward = MLP(dim, hidden_dim, dropout_p, bias, mlp_gating)
 
     def __call__(self, x: Tensor):
         h = x + self.multi_head_attention(self.attn_norm(x))
@@ -82,10 +88,11 @@ class Transformer:
                  num_heads: int = 12,
                  dropout_p: float = 0.1,
                  bias: bool = True,
-                 num_layers: int = 12):
+                 num_layers: int = 12,
+                 mlp_gating: bool = False):
         self.dim = dim
         self.layers = [
-            TransformerLayer(dim, hidden_dim, num_heads, dropout_p, bias)
+            TransformerLayer(dim, hidden_dim, num_heads, dropout_p, bias, mlp_gating)
             for _ in range(num_layers)
         ]
 
@@ -107,7 +114,8 @@ class ViTModel:
                  num_heads: int = 12,
                  dropout_p: float = 0.1,
                  bias: bool = True,
-                 num_layers: int = 12):
+                 num_layers: int = 12,
+                 mlp_gating: bool = False):
 
         self.patch_width = patch_width
         self.patch_height = patch_height
@@ -125,7 +133,8 @@ class ViTModel:
             num_heads=num_heads,
             dropout_p=dropout_p,
             bias=bias,
-            num_layers=num_layers
+            num_layers=num_layers,
+            mlp_gating=mlp_gating
         )
         self.classifier = nn.Linear(embed_dim, output_dim, bias=bias)
 
