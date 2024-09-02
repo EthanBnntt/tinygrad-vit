@@ -101,6 +101,9 @@ class Transformer:
             x = layer(x)
         return x
 
+
+#updates starts here 
+
 class ViTModel:
     def __init__(self,
                  image_width: int = 256,
@@ -125,6 +128,9 @@ class ViTModel:
 
         self.patch_norm = nn.RMSNorm(self.patch_dim)
         self.patch_proj = nn.Linear(self.patch_dim, embed_dim, bias=bias)
+
+        # Seed for reproducibility
+        np.random.seed(42)
         self.cls_embedding = Tensor(np.random.randn(1, 1, embed_dim)).float()
         self.pos_embedding = Tensor(np.random.randn(1, self.num_patches, embed_dim)).float()
 
