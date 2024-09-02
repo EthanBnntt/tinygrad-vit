@@ -123,6 +123,7 @@ class ViTModel:
         self.patch_dim = patch_width * patch_height * channels
         self.num_patches = (image_width // patch_width) * (image_height // patch_height)
 
+        self.patch_norm = nn.RMSNorm(self.patch_dim)
         self.patch_proj = nn.Linear(self.patch_dim, embed_dim, bias=bias)
         self.cls_embedding = Tensor(np.random.randn(1, 1, embed_dim)).float()
         self.pos_embedding = Tensor(np.random.randn(1, self.num_patches, embed_dim)).float()
@@ -140,9 +141,11 @@ class ViTModel:
 
     def __call__(self, x: Tensor):
         # Compute the patch embeddings
-        patches = self.patch_proj(convert_to_patches(x,
+        patches = self.patch_proj(self.patch_norm(convert_to_patches(x,
                                                      patch_height=self.patch_height,
-                                                     patch_width=self.patch_width))
+                                                     patch_width=self.patch_width)))
+
+        # Add the positional embeddings
         patches = patches + self.pos_embedding
 
         # Concatenate the class token to the patches
